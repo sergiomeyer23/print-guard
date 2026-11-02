@@ -10,13 +10,15 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from printguard.fsutil import private_mkdir
+
 HEADER = ["ID", "SKU", "Description", "Qty", "Location", "Due"]
 MIN_PDF_BYTES = 200
 EOF_SCAN_BYTES = 1024
 
 
 def render_pdf(rows: list[tuple], path: Path, queried_at: datetime) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    private_mkdir(path.parent)
     tmp = path.with_suffix(".pdf.part")
     doc = SimpleDocTemplate(
         str(tmp), pagesize=A4, topMargin=28 * mm, bottomMargin=15 * mm, title="Pending shipments"

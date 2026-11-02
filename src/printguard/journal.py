@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from printguard.fsutil import private_mkdir
+
 INTENT = "intent"
 SUBMITTED = "submitted"
 UNKNOWN = "unknown"
@@ -112,7 +114,7 @@ class Journal:
         return _row(row)
 
     def _db(self):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        private_mkdir(self.path.parent)
         conn = sqlite3.connect(self.path, timeout=10)
         try:
             conn.execute(SCHEMA)

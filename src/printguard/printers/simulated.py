@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from printguard.fsutil import private_mkdir
 from printguard.printers.base import (
     JobStatus,
     PrinterError,
@@ -26,7 +27,7 @@ class SimulatedPrinter:
         self.ticks = ticks
         self.stuck = stuck
         self.unreadable = unreadable
-        spool_dir.mkdir(parents=True, exist_ok=True)
+        private_mkdir(spool_dir)
 
     def submit(self, pdf: Path) -> str:
         if not pdf.exists():

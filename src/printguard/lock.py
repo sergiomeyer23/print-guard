@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+from printguard.fsutil import private_mkdir
+
 
 class LockBusy(Exception):
     pass
@@ -18,7 +20,7 @@ class ProcessLock:
         self._fd: int | None = None
 
     def acquire(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        private_mkdir(self.path.parent)
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT)
         try:
             _lock(fd)

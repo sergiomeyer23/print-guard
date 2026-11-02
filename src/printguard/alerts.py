@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from printguard.fsutil import private_mkdir
 from printguard.printers import PrinterError
 from printguard.printers.spooler import PowerShell, quote, run_powershell
 
@@ -17,7 +18,7 @@ class Alerter:
         return self.directory / f"ALERTA_{day}.txt"
 
     def raise_alert(self, day: str, message: str, now: datetime) -> Path:
-        self.directory.mkdir(parents=True, exist_ok=True)
+        private_mkdir(self.directory)
         path = self.path(day)
         if message in self._messages(path):
             return path

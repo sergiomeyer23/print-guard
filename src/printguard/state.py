@@ -6,6 +6,8 @@ import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from printguard.fsutil import private_mkdir
+
 OK = "ok"
 SENT = "enviado"
 FAILED = "falha"
@@ -41,7 +43,7 @@ class StateStore:
             return None
 
     def save(self, state: DayState) -> None:
-        self.directory.mkdir(parents=True, exist_ok=True)
+        private_mkdir(self.directory)
         fd, tmp = tempfile.mkstemp(dir=self.directory, suffix=".tmp")
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(asdict(state), handle, indent=2)

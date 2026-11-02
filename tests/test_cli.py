@@ -139,3 +139,12 @@ def test_long_report_spans_pages_and_stays_valid(tmp_path):
     data = pdf.read_bytes()
     assert pdf_problem(pdf) is None
     assert data.count(b"/Type /Page\n") + data.count(b"/Type /Page ") >= 3
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX permission bits only")
+def test_working_directories_are_private(tmp_path):
+    work = ["--workdir", str(tmp_path)]
+    main(["seed", *work])
+    main(["run", *work])
+    for name in ("state", "out"):
+        assert (tmp_path / name).stat().st_mode & 0o077 == 0
