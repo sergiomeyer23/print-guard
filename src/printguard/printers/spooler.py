@@ -6,13 +6,22 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from printguard.printers.base import JobStatus, PrinterError, QueueUnreadable
+from printguard.printers.base import (
+    JobStatus,
+    PrinterError,
+    QueueUnreadable,
+    SubmitRejected,
+)
 
 PowerShell = Callable[[str], str]
 
 ERROR_FLAGS = ("error", "offline", "paperout", "paperjam", "userintervention", "blocked")
 DONE_FLAGS = ("printed", "completed")
 ACTIVE_FLAGS = ("printing", "retained")
+
+
+class CommandTimeout(PrinterError):
+    pass
 
 
 def run_powershell(script: str) -> str:
@@ -23,7 +32,9 @@ def run_powershell(script: str) -> str:
             text=True,
             timeout=60,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except subprocess.TimeoutExpired as exc:
+        raise CommandTimeout(f"powershell timed out: {exc}") from exc
+    except OSError as exc:
         raise PrinterError(f"powershell unavailable: {exc}") from exc
     if proc.returncode != 0:
         raise PrinterError(proc.stderr.strip() or f"powershell exited {proc.returncode}")
@@ -63,12 +74,24 @@ class WindowsSpoolerPrinter:
         self.appear_interval = appear_interval
 
     def submit(self, pdf: Path) -> str:
-        before = set(self._jobs())
-        self.powershell(
+        try:
+            before = set(self._jobs())
+        except QueueUnreadable as exc:
+            raise SubmitRejected(str(exc)) from exc
+        self._send(pdf)
+        return self._wait_for_new_job(before)
+
+    def _send(self, pdf: Path) -> None:
+        script = (
             f"Start-Process -FilePath {quote(str(pdf))} -Verb PrintTo "
             f"-ArgumentList {quote(chr(34) + self.printer_name + chr(34))} -WindowStyle Hidden"
         )
-        return self._wait_for_new_job(before)
+        try:
+            self.powershell(script)
+        except CommandTimeout:
+            raise
+        except PrinterError as exc:
+            raise SubmitRejected(str(exc)) from exc
 
     def status(self, job_id: str) -> JobStatus:
         jobs = self._jobs()
@@ -103,6 +126,10 @@ class WindowsSpoolerPrinter:
 
 
 def parse_jobs(raw: str) -> dict[str, str]:
+    return {job_id: status for job_id, (status, _) in parse_queue(raw).items()}
+
+
+def parse_queue(raw: str) -> dict[str, tuple[str, str]]:
     if not raw:
         return {}
     try:
@@ -112,6 +139,6 @@ def parse_jobs(raw: str) -> dict[str, str]:
     if isinstance(data, dict):
         data = [data]
     try:
-        return {str(item["ID"]): str(item["Status"]) for item in data}
+        return {str(i["ID"]): (str(i["Status"]), str(i.get("Document", ""))) for i in data}
     except (KeyError, TypeError) as exc:
         raise QueueUnreadable("unexpected queue output shape") from exc

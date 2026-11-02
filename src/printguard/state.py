@@ -9,6 +9,7 @@ from pathlib import Path
 OK = "ok"
 SENT = "enviado"
 FAILED = "falha"
+UNKNOWN = "unknown"
 
 
 @dataclass

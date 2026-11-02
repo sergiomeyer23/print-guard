@@ -3,7 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from printguard.printers.base import JobStatus, PrinterError, QueueUnreadable
+from printguard.printers.base import (
+    JobStatus,
+    PrinterError,
+    QueueEntry,
+    QueueUnreadable,
+    SubmitRejected,
+)
 
 
 class SimulatedPrinter:
@@ -24,8 +30,11 @@ class SimulatedPrinter:
 
     def submit(self, pdf: Path) -> str:
         if not pdf.exists():
-            raise PrinterError(f"file not found: {pdf}")
-        jobs = self._load()
+            raise SubmitRejected(f"file not found: {pdf}")
+        try:
+            jobs = self._load()
+        except QueueUnreadable as exc:
+            raise SubmitRejected(str(exc)) from exc
         job_id = f"sim-{len(jobs) + 1}"
         jobs[job_id] = {"pdf": str(pdf), "state": "queued", "polls": 0}
         self._save(jobs)
@@ -52,9 +61,18 @@ class SimulatedPrinter:
 
     def cancel(self, job_id: str) -> None:
         jobs = self._load()
-        if job_id in jobs:
-            jobs[job_id]["state"] = "cancelled"
-            self._save(jobs)
+        job = jobs.get(job_id)
+        if job is None or job["state"] != "queued":
+            raise PrinterError(f"job {job_id} is not in the queue")
+        job["state"] = "cancelled"
+        self._save(jobs)
+
+    def queue(self) -> dict[str, QueueEntry]:
+        return {
+            job_id: QueueEntry(JobStatus.PRINTING if job["polls"] else JobStatus.QUEUED, job["pdf"])
+            for job_id, job in self._load().items()
+            if job["state"] == "queued"
+        }
 
     def printed_jobs(self) -> list[str]:
         return [jid for jid, job in self._load().items() if job["state"] == "done"]
