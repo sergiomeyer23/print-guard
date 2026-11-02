@@ -92,7 +92,7 @@ class WindowsSpoolerPrinter:
     def _jobs(self) -> dict[str, str]:
         script = (
             f"Get-PrintJob -PrinterName {quote(self.printer_name)} | "
-            "ForEach-Object { [pscustomobject]@{ID=$_.ID; Status=\"$($_.JobStatus)\"} } | "
+            'ForEach-Object { [pscustomobject]@{ID=$_.ID; Status="$($_.JobStatus)"} } | '
             "ConvertTo-Json -Compress"
         )
         try:
