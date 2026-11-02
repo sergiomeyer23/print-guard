@@ -1,0 +1,21 @@
+# Changelog
+
+## 0.2.0
+
+Safer recovery when a run is interrupted. printguard still cannot prove that paper came out, so this release is about not making things worse when it can't tell.
+
+- New `unknown` day state for attempts whose outcome can't be established. It is never retried automatically and never expires into `falha`.
+- Write-ahead journal (`state/journal.db`, SQLite). The attempt is recorded before the printer is called, then updated with the job id.
+- Process lock (`state/printguard.lock`). A second `run` exits with code 3 instead of racing the first. The lock belongs to the OS, so a killed process releases it.
+- Recovery looks at the journal and the spooler before deciding anything. A job that is still queued is confirmed. A job that is gone, or a queue that can't be read, leaves the day `unknown`.
+- New command `printguard resolve --printed | --not-printed` to settle an `unknown` day by hand.
+- New exit codes: 3 for "another instance is running", 4 for `unknown`.
+- Alerts that repeat the previous message are no longer written again.
+- `print-only` refuses to run while an attempt is unresolved. Before, it cancelled the pending job and sent a new one.
+- Failing to cancel a stuck job is now `unknown`, since the job may still print. Before, it was a plain failure.
+- Fix: SQLite connections are closed, which unblocks the Windows CI.
+- State files from 0.1 are picked up on the first run. Day summaries stay in `state/<date>.json`; the journal is the source of truth for recovery.
+
+## 0.1.0
+
+First public version: CLI, per-day state, simulated and Windows spooler backends, PDF report, alert file, scheduled task scripts, CI.

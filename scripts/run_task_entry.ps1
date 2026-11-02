@@ -30,6 +30,11 @@ if ((Invoke-Printguard @("check")) -eq 0) {
 $code = Invoke-Printguard @("run")
 Write-Log "run exited with $code"
 
+if ($code -eq 3) {
+    Write-Log "another instance is running, leaving it alone"
+    exit 0
+}
+
 if ($code -ne 0) {
     [void](Invoke-Printguard @("check", "--deadline", $Deadline))
 }
