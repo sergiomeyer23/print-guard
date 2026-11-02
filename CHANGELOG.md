@@ -10,14 +10,13 @@ Preparation for a first run on real hardware. No record of a physical-printer ho
 - New: `scripts/check_homologation.py` reads a filled-in checklist and refuses approval while any check lacks a result or evidence, any check failed, or the sign-off is missing.
 - New: [docs/releasing.md](docs/releasing.md), the criteria for a stable release.
 - CI: actions updated to checkout 7 and setup-python 7. Dependabot no longer raises dependency floors.
-
 - New: `printguard --version`.
 - New: `printguard resolve --day YYYY-MM-DD` settles an earlier day.
 - New: `run` and `check` write an alert for any earlier day still unresolved, every day, until it is settled.
 - New: exit code 5 for an unexpected error. It is logged, written as an alert, and the lock is released.
 - Changed: Event Log alerts use `Write-EventLog` with a `printguard` source that `install_task.ps1` registers. `eventcreate` needed administrator rights, and the task runs as a normal user. Verified on a hosted runner as administrator.
 - Fix: the journal connection is closed when the schema can't be applied, which left a corrupt `journal.db` locked on Windows.
-- CI: read-only token permissions, current action versions, concurrency control, Dependabot.
+- CI: read-only token permissions, concurrency control, Dependabot.
 - Docs: [installation procedure](docs/installation-windows.md), [homologation checklist](docs/homologation-checklist.md), a security note, release notes for 0.2.1.
 
 ## 0.2.1
