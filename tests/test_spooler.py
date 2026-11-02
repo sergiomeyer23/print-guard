@@ -2,8 +2,15 @@ import json
 
 import pytest
 
-from printguard.printers import JobStatus, PrinterError, QueueUnreadable, WindowsSpoolerPrinter
-from printguard.printers.spooler import classify, parse_jobs, quote
+from printguard.printers import (
+    JobStatus,
+    PrinterError,
+    QueueUnreadable,
+    SimulatedPrinter,
+    SubmitRejected,
+    WindowsSpoolerPrinter,
+)
+from printguard.printers.spooler import CommandTimeout, classify, parse_jobs, parse_queue, quote
 
 
 class FakePowerShell:
@@ -101,3 +108,49 @@ def test_parse_single_object_and_list():
 def test_classify_defaults_to_queued():
     assert classify("Normal") is JobStatus.QUEUED
     assert classify("Printed") is JobStatus.DONE
+
+
+def test_queue_exposes_status_and_document(printer, ps):
+    ps.queue[4] = "Printing"
+    entries = printer.queue()
+    assert entries["4"].status is JobStatus.PRINTING
+
+
+def test_start_process_failure_is_a_proven_rejection(printer, ps, tmp_path):
+    def failing(script):
+        if script.startswith("Start-Process"):
+            raise PrinterError("file association missing")
+        return ps(script)
+
+    printer.powershell = failing
+    with pytest.raises(SubmitRejected):
+        printer.submit(tmp_path / "r.pdf")
+
+
+def test_unreadable_queue_before_sending_is_a_proven_rejection(printer, ps, tmp_path):
+    ps.fail_listing = True
+    with pytest.raises(SubmitRejected):
+        printer.submit(tmp_path / "r.pdf")
+
+
+def test_timeout_while_sending_is_ambiguous(printer, ps, tmp_path):
+    def slow(script):
+        if script.startswith("Start-Process"):
+            raise CommandTimeout("powershell timed out")
+        return ps(script)
+
+    printer.powershell = slow
+    with pytest.raises(CommandTimeout) as caught:
+        printer.submit(tmp_path / "r.pdf")
+    assert not isinstance(caught.value, SubmitRejected)
+
+
+def test_parse_queue_keeps_document_names():
+    raw = '[{"ID":1,"Status":"Normal","Document":"report_2026-03-10.pdf"}]'
+    assert parse_queue(raw) == {"1": ("Normal", "report_2026-03-10.pdf")}
+
+
+@pytest.mark.parametrize("backend", [WindowsSpoolerPrinter, SimulatedPrinter])
+def test_backends_implement_the_whole_printer_protocol(backend):
+    for method in ("submit", "status", "cancel", "queue"):
+        assert callable(getattr(backend, method))
