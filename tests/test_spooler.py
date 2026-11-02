@@ -154,3 +154,29 @@ def test_parse_queue_keeps_document_names():
 def test_backends_implement_the_whole_printer_protocol(backend):
     for method in ("submit", "status", "cancel", "queue"):
         assert callable(getattr(backend, method))
+
+
+def test_null_and_empty_array_mean_an_empty_queue():
+    assert parse_queue("null") == {}
+    assert parse_queue("[]") == {}
+
+
+def test_script_is_passed_encoded_so_quoting_cannot_break_it(monkeypatch):
+    import base64
+    import subprocess
+
+    from printguard.printers import spooler
+
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(spooler.subprocess, "run", fake_run)
+    script = "Get-PrintJob -PrinterName 'Office \"A\"'"
+    assert spooler.run_powershell(script) == "[]"
+    argv = captured["argv"]
+    assert "-Command" not in argv
+    decoded = base64.b64decode(argv[argv.index("-EncodedCommand") + 1]).decode("utf-16-le")
+    assert decoded.endswith(script)

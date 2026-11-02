@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import subprocess
 import time
@@ -25,12 +26,26 @@ class CommandTimeout(PrinterError):
     pass
 
 
+UTF8_OUTPUT = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+
+
+def encode_command(script: str) -> str:
+    return base64.b64encode((UTF8_OUTPUT + script).encode("utf-16-le")).decode("ascii")
+
+
 def run_powershell(script: str) -> str:
     try:
         proc = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-EncodedCommand",
+                encode_command(script),
+            ],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=60,
         )
     except subprocess.TimeoutExpired as exc:
@@ -146,6 +161,8 @@ def parse_queue(raw: str) -> dict[str, tuple[str, str]]:
         data = json.loads(raw)
     except ValueError as exc:
         raise QueueUnreadable(f"unparseable queue output: {raw[:80]!r}") from exc
+    if data is None:
+        return {}
     if isinstance(data, dict):
         data = [data]
     try:
