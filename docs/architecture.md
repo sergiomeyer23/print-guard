@@ -62,7 +62,7 @@ Nothing in this table sends a second copy. Reprinting happens only after a perso
 | `report.py` | A4 PDF with the query time in the header, plus a structural check (header, end marker, size). |
 | `printers/` | The `Printer` protocol (`submit`, `status`, `cancel`, `queue`) and two implementations. |
 | `runner.py` | The state machine. Everything external (clock, sleep, source, renderer, printer) is injected, which is how the tests inject faults. |
-| `alerts.py` | `ALERTA_<date>.txt` and, optionally, the Windows Event Log through `Write-EventLog` and a registered `printguard` source. A message identical to the last one is not written again. |
+| `alerts.py` | `ALERTA_<date>.txt` and, optionally, the Windows Event Log through `Write-EventLog` and a registered `printguard` source. A message already present in that day's alert file is not written again. |
 | `cli.py` | Argument parsing and wiring. Any unexpected exception becomes an alert and exit code 5, and the lock is released on the way out. |
 
 ## Printer backends

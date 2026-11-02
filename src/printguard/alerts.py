@@ -19,7 +19,7 @@ class Alerter:
     def raise_alert(self, day: str, message: str, now: datetime) -> Path:
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.path(day)
-        if self._last_message(path) == message:
+        if message in self._messages(path):
             return path
         with path.open("a", encoding="utf-8") as handle:
             handle.write(f"[{now:%Y-%m-%d %H:%M:%S}] {message}\n")
@@ -28,11 +28,11 @@ class Alerter:
         return path
 
     @staticmethod
-    def _last_message(path: Path) -> str | None:
+    def _messages(path: Path) -> set[str]:
         if not path.exists():
-            return None
+            return set()
         lines = path.read_text(encoding="utf-8").splitlines()
-        return lines[-1].split("] ", 1)[-1] if lines else None
+        return {line.split("] ", 1)[-1] for line in lines}
 
 
 EVENT_SOURCE = "printguard"

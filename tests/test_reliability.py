@@ -355,3 +355,13 @@ def test_resolve_can_settle_an_earlier_day(config, make_runner, alert_file):
     make_runner(SimulatedPrinter(spool(config))).run()
     assert not alert_file.exists() or "unresolved attempt" not in alert_file.read_text()
     assert StateStore(config.state_dir).load(old_day).status == OK
+
+
+def test_alerts_do_not_pile_up_when_two_unresolved_days_alternate(config, make_runner, alert_file):
+    yesterday_unknown(config, make_runner)
+    make_runner(AmbiguousSubmit(spool(config))).run()
+    mark_job_done(config)
+    for _ in range(6):
+        make_runner(SimulatedPrinter(spool(config))).run()
+    lines = alert_file.read_text().splitlines()
+    assert len(lines) == len(set(line.split("] ", 1)[1] for line in lines))
