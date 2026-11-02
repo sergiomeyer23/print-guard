@@ -22,3 +22,41 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+
+  windows-integration:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]"
+
+      - name: Parse PowerShell scripts (Windows PowerShell 5.1)
+        shell: powershell
+        run: ./tests/windows/check_scripts.ps1
+
+      - name: Lint PowerShell scripts
+        shell: pwsh
+        run: ./tests/windows/analyze_scripts.ps1
+
+      - name: Register and inspect the scheduled task
+        shell: powershell
+        run: ./tests/windows/check_task.ps1
+
+      - name: Create a paused test printer
+        shell: pwsh
+        run: ./tests/windows/setup_printer.ps1
+
+      - name: Spooler tests against the real Windows print queue
+        shell: pwsh
+        run: |
+          python -m pytest tests/windows -rA -p no:cacheprovider *> pytest-windows.txt
+          $code = $LASTEXITCODE
+          $tail = (Get-Content pytest-windows.txt | Select-Object -Last 40) -join "%0A"
+          Write-Host "::notice title=spooler tests (exit $code)::$tail"
+          exit $code
+
+      - name: Guardian script end to end
+        shell: powershell
+        run: ./tests/windows/smoke_guardian.ps1
