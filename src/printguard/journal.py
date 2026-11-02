@@ -88,6 +88,17 @@ class Journal:
             ).fetchone()
         return _row(row) if row else None
 
+    def unresolved_before(self, day: str) -> list[Attempt]:
+        marks = ", ".join("?" for _ in OPEN_PHASES)
+        with self._db() as db:
+            rows = db.execute(
+                f"SELECT {COLUMNS} FROM attempts WHERE day < ? AND phase IN ({marks}) "
+                "AND seq = (SELECT MAX(seq) FROM attempts AS a WHERE a.day = attempts.day) "
+                "ORDER BY day",
+                (day, *OPEN_PHASES),
+            ).fetchall()
+        return [_row(row) for row in rows]
+
     def _update(self, attempt_id: int, assignment: str, values: tuple) -> Attempt:
         with self._db() as db, db:
             db.execute(

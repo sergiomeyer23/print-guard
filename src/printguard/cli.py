@@ -47,6 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--deadline", type=parse_clock, help="HH:MM, raise an alert if not ok by then"
     )
     resolve = sub.add_parser("resolve", parents=[common], help="settle an unknown attempt by hand")
+    resolve.add_argument("--day", help="YYYY-MM-DD, default today")
     outcome = resolve.add_mutually_exclusive_group(required=True)
     outcome.add_argument("--printed", action="store_true", help="the paper came out")
     outcome.add_argument("--not-printed", action="store_true", help="it did not, allow a reprint")
@@ -109,5 +110,5 @@ def dispatch(runner: Runner, args: argparse.Namespace) -> int:
     if args.command == "print-only":
         return runner.print_only()
     if args.command == "resolve":
-        return runner.resolve(printed=args.printed)
+        return runner.resolve(printed=args.printed, day=args.day)
     return runner.check(args.deadline)

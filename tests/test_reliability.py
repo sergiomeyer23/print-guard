@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import threading
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -321,3 +322,36 @@ def test_cli_resolve_and_unknown_exit_codes(tmp_path):
     assert main(["resolve", *work, "--printed"]) == EXIT_FAILED
     assert main(["run", *work]) == EXIT_OK
     assert main(["check", *work]) == EXIT_OK
+
+
+def yesterday_unknown(config, make_runner):
+    earlier = datetime(2026, 3, 9, 8, 0, 0)
+    make_runner(AmbiguousSubmit(spool(config)), now=earlier).run()
+    mark_job_done(config)
+    return earlier.date().isoformat()
+
+
+def test_unresolved_attempt_from_an_earlier_day_is_reported_today(config, make_runner, alert_file):
+    old_day = yesterday_unknown(config, make_runner)
+    printer = SimulatedPrinter(spool(config))
+    assert make_runner(printer).run() == EXIT_OK
+    assert f"unresolved attempt from {old_day} (unknown)" in alert_file.read_text()
+    assert len(printer._load()) == 2
+
+
+def test_check_also_reports_an_old_unresolved_attempt_when_today_is_ok(
+    config, make_runner, alert_file
+):
+    old_day = yesterday_unknown(config, make_runner)
+    make_runner(SimulatedPrinter(spool(config))).run()
+    alert_file.unlink()
+    assert make_runner().check() == EXIT_OK
+    assert f"unresolved attempt from {old_day}" in alert_file.read_text()
+
+
+def test_resolve_can_settle_an_earlier_day(config, make_runner, alert_file):
+    old_day = yesterday_unknown(config, make_runner)
+    assert make_runner().resolve(printed=True, day=old_day) == EXIT_OK
+    make_runner(SimulatedPrinter(spool(config))).run()
+    assert not alert_file.exists() or "unresolved attempt" not in alert_file.read_text()
+    assert StateStore(config.state_dir).load(old_day).status == OK

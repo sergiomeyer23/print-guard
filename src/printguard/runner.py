@@ -76,11 +76,12 @@ class Runner:
     def print_only(self) -> int:
         return self._locked(self._print_only)
 
-    def resolve(self, printed: bool) -> int:
-        return self._locked(lambda: self._resolve(printed))
+    def resolve(self, printed: bool, day: str | None = None) -> int:
+        return self._locked(lambda: self._resolve(printed, day or self._today()))
 
     def check(self, deadline: clock_time | None = None) -> int:
         day = self._today()
+        self._alert_stale(day)
         state = self._synced_state(day, persist=False)
         if state and state.status == OK:
             return EXIT_OK
@@ -100,6 +101,15 @@ class Runner:
             log.exception("could not write the alert either")
         return EXIT_ERROR
 
+    def _alert_stale(self, today: str) -> None:
+        for attempt in self.journal.unresolved_before(today):
+            self._alert(
+                today,
+                f"unresolved attempt from {attempt.day} ({attempt.phase}); "
+                f"settle it with: printguard resolve --day {attempt.day} "
+                "--printed or --not-printed",
+            )
+
     def _locked(self, action: Callable[[], int]) -> int:
         try:
             self.lock.acquire()
@@ -113,6 +123,7 @@ class Runner:
 
     def _run(self) -> int:
         day = self._today()
+        self._alert_stale(day)
         state = self._synced_state(day)
         if state and state.status == OK:
             log.info("%s already confirmed, nothing to do", day)
@@ -137,8 +148,7 @@ class Runner:
             return EXIT_UNKNOWN if attempt.phase == j.UNKNOWN else EXIT_PENDING
         return self._submit(state, Path(state.pdf))
 
-    def _resolve(self, printed: bool) -> int:
-        day = self._today()
+    def _resolve(self, printed: bool, day: str) -> int:
         state = self._synced_state(day)
         attempt = self.journal.latest(day)
         if state is None or attempt is None or not attempt.is_open:
