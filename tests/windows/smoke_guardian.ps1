@@ -11,6 +11,8 @@ Write-Host "guardian exit code: $code"
 
 $log = Get-ChildItem -Path (Join-Path $work "logs") -Filter "guard_*.log" | Select-Object -First 1
 $text = if ($log) { Get-Content $log.FullName -Raw } else { "" }
+$flat = ($text -replace "\r?\n", "%0A")
+Write-Host "::notice title=guard log (exit $code)::$flat"
 Write-Host "---- guard log ----"
 Write-Host $text
 $alert = Get-ChildItem -Path (Join-Path $work "out") -Filter "ALERTA_*.txt" -ErrorAction SilentlyContinue
