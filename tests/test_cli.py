@@ -119,3 +119,23 @@ def test_event_log_failure_does_not_raise(monkeypatch):
 
     monkeypatch.setattr(alerts.sys, "platform", "win32")
     assert alerts.write_event_log("x", powershell=denied) is False
+
+
+def test_empty_report_is_a_valid_pdf(tmp_path):
+    from datetime import datetime
+
+    pdf = render_pdf([], tmp_path / "empty.pdf", datetime(2026, 3, 10, 8, 0, 0))
+    assert pdf_problem(pdf) is None
+
+
+def test_long_report_spans_pages_and_stays_valid(tmp_path):
+    from datetime import datetime
+
+    rows = [
+        (i, f"SKU-{i}", "Hex bolt M8 (box)", i % 40 + 1, "A-01-01", "2026-03-10")
+        for i in range(300)
+    ]
+    pdf = render_pdf(rows, tmp_path / "long.pdf", datetime(2026, 3, 10, 8, 0, 0))
+    data = pdf.read_bytes()
+    assert pdf_problem(pdf) is None
+    assert data.count(b"/Type /Page\n") + data.count(b"/Type /Page ") >= 3
