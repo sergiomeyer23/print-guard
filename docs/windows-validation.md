@@ -9,6 +9,7 @@ What has been checked on Windows, where, and what has not. The "windows-integrat
 | The `.ps1` scripts parse under Windows PowerShell 5.1 | `tests/windows/check_scripts.ps1`, PowerShell parser | passes |
 | Static analysis of the scripts | PSScriptAnalyzer, errors and warnings | no findings after fixes (it flagged three issues in the first run) |
 | `install_task.ps1` registers the task as documented | The registered task is read back: two triggers, daily 08:00, repeat every 5 minutes for 1h05, boot trigger delayed 5 minutes, `WakeToRun`, `StartWhenAvailable`, `IgnoreNew` | passes |
+| Alerts reach the Windows Event Log | `Write-EventLog` through the backend, read back with `Get-WinEvent`; the installer registers the event source | passes (as administrator) |
 | Queue listing and parsing of `Get-PrintJob` output | A real spooler queue, empty and with a job in it | passes |
 | Cancelling a job, and cancelling one that doesn't exist | `Remove-PrintJob` against a paused test printer | passes |
 | Sending a file through the `PrintTo` verb and finding the new job id | A `.txt` file handled by Notepad | passes |
@@ -25,15 +26,17 @@ The test printer is "Microsoft Print To PDF" on a file port and is paused, so jo
 - Scripts passed with `-EncodedCommand` return errors as CLIXML, which made alert messages unreadable. Fixed, with a test built from the real output.
 - A Windows runner has no PDF application registered for `PrintTo`. The backend reported that as a proven rejection (`falha` plus an alert), which is the intended behavior, but it shows the prerequisite below.
 
+- `eventcreate`, which the first version used for the Event Log, needs administrator rights, and the scheduled task runs as a normal user. It was replaced with `Write-EventLog` and a source registered by the installer.
+
 ## Not checked
 
 - Anything involving a physical printer, a network printer or a vendor driver.
 - `PrintTo` for PDF files. The runner has no PDF handler, so the path that sends the report itself was exercised only with a text file. Adobe Reader, SumatraPDF and similar programs register the verb differently, and some rename the spool document, which would push recovery to `unknown`.
 - The task actually firing at 08:00, waking the machine, repeating until 09:05, or running at boot. Only the registered configuration was read back.
 - Running while no one is logged on. The installer registers the task for the current user.
-- Writing to the Windows Event Log with `--event-log`. The guardian passes the flag, but whether the entry was written was not verified.
+- Writing to the Event Log as a standard user. The runner account is an administrator, so this only shows the write works once the source is registered.
 - Spooler behavior across a real reboot.
 
 ## Before relying on it
 
-Print a test report on the real printer with `printguard run --printer spooler --printer-name "<name>"`, check the PDF handler first (`printguard run` will report `falha` with "No application is associated" if there is none), and leave the scheduled task in place for a few days while reading `logs/` and the alert files.
+Follow [installation-windows.md](installation-windows.md) and fill in [homologation-checklist.md](homologation-checklist.md). Check the PDF handler first: `printguard run` reports `falha` with "No application is associated" if there is none.

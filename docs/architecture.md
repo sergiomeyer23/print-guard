@@ -47,6 +47,8 @@ When a run starts and the journal has an attempt that never closed, it decides f
 | submitted or unknown, with job id | the job is gone | `unknown`: printed and lost look the same |
 | any open attempt | queue can't be read | `unknown` |
 
+Before any of this, `run` and `check` look for attempts from earlier days that never closed and write an alert for each, so a forgotten `unknown` doesn't go quiet when the date changes.
+
 Nothing in this table sends a second copy. Reprinting happens only after a person runs `resolve --not-printed`, or after a cancel that the spooler accepted.
 
 ## Modules
@@ -60,8 +62,8 @@ Nothing in this table sends a second copy. Reprinting happens only after a perso
 | `report.py` | A4 PDF with the query time in the header, plus a structural check (header, end marker, size). |
 | `printers/` | The `Printer` protocol (`submit`, `status`, `cancel`, `queue`) and two implementations. |
 | `runner.py` | The state machine. Everything external (clock, sleep, source, renderer, printer) is injected, which is how the tests inject faults. |
-| `alerts.py` | `ALERTA_<date>.txt` and, optionally, the Windows Event Log. A message identical to the last one is not written again. |
-| `cli.py` | Argument parsing and wiring. |
+| `alerts.py` | `ALERTA_<date>.txt` and, optionally, the Windows Event Log through `Write-EventLog` and a registered `printguard` source. A message identical to the last one is not written again. |
+| `cli.py` | Argument parsing and wiring. Any unexpected exception becomes an alert and exit code 5, and the lock is released on the way out. |
 
 ## Printer backends
 

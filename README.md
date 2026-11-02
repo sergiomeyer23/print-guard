@@ -10,6 +10,10 @@ A scheduled task that prints a report can report success while nothing comes out
 
 printguard treats "sent" and "printed" as two different states. It builds the PDF, submits it, and keeps reading the queue until the job is gone. If that doesn't happen it cancels the job, writes an alert file and tries again on the next scheduled run. Each attempt is written to a small SQLite journal before the printer is called, and a lock keeps two runs from working at once, so a retry or a reboot does not quietly print the report twice. When the outcome can't be established the day is marked `unknown` and left for a person to settle.
 
+## Status
+
+Ready for homologation, not yet proven on real hardware. The code is tested with a simulated printer on Linux and Windows, and the Windows backend has been run against a real but paused print queue on a hosted CI runner. Nobody has yet printed a report with it on a physical printer. [docs/installation-windows.md](docs/installation-windows.md) is the install procedure and [docs/homologation-checklist.md](docs/homologation-checklist.md) is the acceptance checklist that has to be filled in before it is trusted with a real report.
+
 ## Demo
 
 ```bash
@@ -37,9 +41,11 @@ The job is cancelled, the state becomes `falha`, and `out/ALERTA_<date>.txt` get
 | `printguard run` | Queries, renders, prints and confirms. Skips the day if it is already `ok`. Recovers an interrupted attempt before doing anything else. |
 | `printguard print-only` | Reprints today's existing PDF without touching the data source. Refuses while an attempt is unresolved. |
 | `printguard check` | Reports today's state through its exit code. With `--deadline HH:MM` it also writes an alert if the day isn't `ok` by then. |
-| `printguard resolve` | Settles an unresolved attempt by hand: `--printed` closes the day, `--not-printed` cancels the job if it can and allows one reprint. |
+| `printguard resolve` | Settles an unresolved attempt by hand: `--printed` closes the day, `--not-printed` cancels the job if it can and allows one reprint. `--day YYYY-MM-DD` settles an earlier day. |
 
-Exit codes: 0 `ok`, 1 `falha`, 2 pending (not confirmed yet), 3 another instance holds the lock, 4 `unknown`.
+Exit codes: 0 `ok`, 1 `falha`, 2 pending (not confirmed yet), 3 another instance holds the lock, 4 `unknown`, 5 unexpected error (an alert is written too). `printguard --version` prints the version.
+
+If an earlier day is still unresolved, `run` and `check` write an alert about it every day until someone settles it.
 
 Printer options: `--printer simulated` (default) or `--printer spooler --printer-name "Name"`. Add `--event-log` on Windows to also write alerts to the Application event log.
 
@@ -78,9 +84,13 @@ More detail in [docs/architecture.md](docs/architecture.md).
 
 The full table, including the ones I can't cover, is in [docs/failure-modes.md](docs/failure-modes.md).
 
+## Using it with your own data
+
+The data source and the report are samples. `src/printguard/source.py` holds the SQLite query and `src/printguard/report.py` holds the PDF layout. To print your own report, replace `fetch_pending` and the table in `report.py`, keep the signatures, and run the tests. The state machine, the journal, the printers and the guardian don't care what the report contains. Installing the scheduled task before doing this will print the fictional sample every morning.
+
 ## Windows scheduling
 
-`scripts/install_task.ps1 -PrinterName "Your Printer"` registers a scheduled task: 08:00 daily, repeating every 5 minutes until 09:05, plus a trigger 5 minutes after boot, with wake-to-run enabled. `scripts/run_task_entry.ps1` is what the task calls. It exits early if the day is already `ok`, so the repetition costs nothing once the report is out. Run the installer from an elevated PowerShell.
+`scripts/install_task.ps1 -PrinterName "Your Printer"` registers a scheduled task: 08:00 daily, repeating every 5 minutes until 09:05, plus a trigger 5 minutes after boot, with wake-to-run enabled. `scripts/run_task_entry.ps1` is what the task calls. It exits early if the day is already `ok`, so the repetition costs nothing once the report is out. Run the installer from an elevated PowerShell, which also lets it register the `printguard` event source for `--event-log`. The task runs as the user who installed it, and only while that user is logged on. Full procedure in [docs/installation-windows.md](docs/installation-windows.md).
 
 ## Limitations
 
@@ -89,6 +99,7 @@ The full table, including the ones I can't cover, is in [docs/failure-modes.md](
 - Job matching after a crash relies on the spool job's document name containing the PDF file name. Print handlers that rename documents will fall back to `unknown`.
 - `WindowsSpoolerPrinter` prints through the shell `PrintTo` verb, so the machine needs a PDF handler that supports it. It has been exercised against a real Windows print queue in CI, but never against a physical printer, and the PDF handler on that runner doesn't support `PrintTo`. See [docs/windows-validation.md](docs/windows-validation.md) for exactly what was and wasn't checked.
 - The lock covers one working directory on one machine. Two machines sharing a network folder are not protected from each other.
+- Nothing deletes old data. `out/` (PDFs), `state/` and `logs/` grow by a few files a day, and the PDFs contain whatever your source returns. Clean them on your own schedule, and never delete `state/journal.db` to "fix" a day.
 - One report, one printer, one calendar day per state. This is a small tool, not a scheduler or a framework.
 
 ## Development

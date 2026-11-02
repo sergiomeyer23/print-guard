@@ -24,4 +24,7 @@ What printguard does for each failure, and what it can't do. "Test" names the fi
 | Wrong default PDF handler | No handler supports `PrintTo` | Starting the print fails, which is a proven rejection: `falha`, alert. Seen on a real Windows runner. | `test_spooler`, `windows-integration` |
 | Document renamed by the handler | Some PDF viewers | Recovery can't match the job by name and falls back to `unknown`. | none |
 | Two machines on one shared folder | Network share as workdir | Not protected. The lock is per machine. | none |
-| Event Log write denied | No admin rights to create the source | The alert file is still written. | none |
+| Event Log source missing | Installer not run elevated | The Event Log write fails quietly and the alert file is still written. | `test_cli` |
+| Unexpected exception | Corrupt journal, disk full, bug | Logged, written as an alert, exit code 5, lock released. The day's state is not changed. | `test_cli` |
+| Unknown left behind on an earlier day | Nobody ran `resolve` | `run` and `check` alert about it each day until it is settled. `resolve --day` closes it. | `test_reliability` |
+| Data piling up | Nothing prunes `out/`, `state/` or `logs/` | Not handled. Clean up by hand. | none |
