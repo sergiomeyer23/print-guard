@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "printguard"
-version = "0.2.1"
+version = "0.3.0.dev0"
 description = "Scheduled reports that print, confirm the job left the queue, and alert you when they don't."
 readme = "README.md"
 requires-python = ">=3.11"

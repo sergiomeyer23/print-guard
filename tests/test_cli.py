@@ -1,8 +1,11 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from printguard.cli import main
 from printguard.report import pdf_problem, render_pdf
+from printguard.runner import EXIT_ERROR
 from printguard.source import fetch_pending, seed
 
 
@@ -56,3 +59,34 @@ def test_database_file_is_released_after_use(tmp_path):
     db.unlink()
     seed(db, date(2026, 3, 10))
     seed(db, date(2026, 3, 10), force=True)
+
+
+def test_version_flag(capsys):
+    from printguard import __version__
+
+    with pytest.raises(SystemExit) as stop:
+        main(["--version"])
+    assert stop.value.code == 0
+    assert __version__ in capsys.readouterr().out
+
+
+def test_unexpected_error_exits_with_5_and_leaves_an_alert(tmp_path):
+    work = ["--workdir", str(tmp_path)]
+    main(["seed", *work])
+    (tmp_path / "state").mkdir()
+    (tmp_path / "state" / "journal.db").write_bytes(b"this is not a sqlite database" * 20)
+    assert main(["run", *work]) == EXIT_ERROR
+    alert = next((tmp_path / "out").glob("ALERTA_*.txt")).read_text()
+    assert "unexpected error: DatabaseError" in alert
+
+
+def test_lock_is_released_after_an_unexpected_error(tmp_path):
+    from printguard.lock import ProcessLock
+
+    work = ["--workdir", str(tmp_path)]
+    main(["seed", *work])
+    (tmp_path / "state").mkdir()
+    (tmp_path / "state" / "journal.db").write_bytes(b"garbage" * 40)
+    main(["run", *work])
+    with ProcessLock(tmp_path / "state" / "printguard.lock"):
+        pass

@@ -25,6 +25,7 @@ EXIT_FAILED = 1
 EXIT_PENDING = 2
 EXIT_BUSY = 3
 EXIT_UNKNOWN = 4
+EXIT_ERROR = 5
 
 DAY_STATUS = {
     j.INTENT: SENT,
@@ -90,6 +91,14 @@ class Runner:
             status = state.status if state else "missing"
             self._alert(day, f"no confirmed print by {deadline:%H:%M} (state: {status})")
         return code
+
+    def report_unexpected(self, exc: Exception) -> int:
+        log.exception("unexpected error")
+        try:
+            self._alert(self._today(), f"unexpected error: {type(exc).__name__}: {exc}")
+        except Exception:
+            log.exception("could not write the alert either")
+        return EXIT_ERROR
 
     def _locked(self, action: Callable[[], int]) -> int:
         try:

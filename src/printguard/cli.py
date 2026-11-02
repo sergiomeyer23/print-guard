@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, time
 from pathlib import Path
 
+from printguard import __version__
 from printguard.alerts import Alerter
 from printguard.printers import Printer, SimulatedPrinter, WindowsSpoolerPrinter
 from printguard.runner import Config, Runner
@@ -35,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser = argparse.ArgumentParser(prog="printguard", description=__doc__)
+    parser.add_argument("--version", action="version", version=f"printguard {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("seed", parents=[common], help="create the demo database").add_argument(
         "--force", action="store_true"
@@ -95,6 +97,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"seeded {count} rows into {db}")
         return 0
     runner = make_runner(args)
+    try:
+        return dispatch(runner, args)
+    except Exception as exc:
+        return runner.report_unexpected(exc)
+
+
+def dispatch(runner: Runner, args: argparse.Namespace) -> int:
     if args.command == "run":
         return runner.run()
     if args.command == "print-only":

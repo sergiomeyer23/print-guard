@@ -103,7 +103,11 @@ class Journal:
     def _db(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.path, timeout=10)
-        conn.execute(SCHEMA)
+        try:
+            conn.execute(SCHEMA)
+        except BaseException:
+            conn.close()
+            raise
         return closing(conn)
 
 
