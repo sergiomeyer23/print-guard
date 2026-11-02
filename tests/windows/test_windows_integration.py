@@ -111,3 +111,25 @@ def test_vanished_job_on_a_real_spooler_is_unknown(tmp_path):
     day = open_attempt(config, "987654")
     assert runner.run() == EXIT_UNKNOWN
     assert StateStore(config.state_dir).load(day).status == UNKNOWN
+
+
+def test_event_log_entry_is_written_and_readable():
+    import uuid
+
+    from printguard.alerts import write_event_log
+
+    run_powershell(
+        "if (-not [System.Diagnostics.EventLog]::SourceExists('printguard')) "
+        "{ New-EventLog -LogName Application -Source printguard }"
+    )
+    token = f"printguard ci event {uuid.uuid4()}"
+    assert write_event_log(token)
+    query = (
+        "Get-WinEvent -FilterHashtable @{LogName='Application'; ProviderName='printguard'} "
+        "-MaxEvents 20 | ForEach-Object { $_.Message }"
+    )
+    for _ in range(10):
+        if token in run_powershell(query):
+            return
+        time.sleep(1)
+    raise AssertionError("the event was not found in the Application log")

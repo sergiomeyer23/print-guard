@@ -24,6 +24,14 @@ $boot.Delay = "PT5M"
 $settings = New-ScheduledTaskSettingsSet -WakeToRun -StartWhenAvailable `
     -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
 
+if (-not [System.Diagnostics.EventLog]::SourceExists("printguard")) {
+    try {
+        New-EventLog -LogName Application -Source "printguard"
+    } catch {
+        Write-Warning "Could not register the 'printguard' event source (needs an elevated prompt). Alerts will still be written to files."
+    }
+}
+
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($daily, $boot) `
     -Settings $settings -Description "Prints the daily report and confirms the job" -Force | Out-Null
 Write-Output "Registered task '$TaskName' (08:00 daily, every 5 min until 09:05, plus boot +5 min)."

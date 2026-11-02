@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from printguard.printers import PrinterError
+from printguard.printers.spooler import PowerShell, quote, run_powershell
 
 
 class Alerter:
@@ -33,24 +35,20 @@ class Alerter:
         return lines[-1].split("] ", 1)[-1] if lines else None
 
 
-def write_event_log(message: str) -> bool:
+EVENT_SOURCE = "printguard"
+EVENT_ID = 100
+
+
+def write_event_log(message: str, powershell: PowerShell | None = None) -> bool:
     if sys.platform != "win32":
         return False
-    result = subprocess.run(
-        [
-            "eventcreate",
-            "/L",
-            "APPLICATION",
-            "/T",
-            "ERROR",
-            "/ID",
-            "100",
-            "/SO",
-            "printguard",
-            "/D",
-            message[:2000],
-        ],
-        capture_output=True,
-        text=True,
+    run = powershell or run_powershell
+    script = (
+        f"Write-EventLog -LogName Application -Source {EVENT_SOURCE} -EntryType Error "
+        f"-EventId {EVENT_ID} -Message {quote(message[:30000])}"
     )
-    return result.returncode == 0
+    try:
+        run(script)
+    except PrinterError:
+        return False
+    return True

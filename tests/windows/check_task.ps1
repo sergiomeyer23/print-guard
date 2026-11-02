@@ -25,6 +25,7 @@ try {
     Assert-Equal $task.Settings.WakeToRun $true "WakeToRun"
     Assert-Equal $task.Settings.StartWhenAvailable $true "StartWhenAvailable"
     Assert-Equal "$($task.Settings.MultipleInstances)" "IgnoreNew" "MultipleInstances"
+    Assert-Equal ([System.Diagnostics.EventLog]::SourceExists("printguard")) $true "event source registered"
     Write-Host "action: $($task.Actions[0].Execute) $($task.Actions[0].Arguments)"
 } finally {
     Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue

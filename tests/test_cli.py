@@ -1,3 +1,4 @@
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -90,3 +91,31 @@ def test_lock_is_released_after_an_unexpected_error(tmp_path):
     main(["run", *work])
     with ProcessLock(tmp_path / "state" / "printguard.lock"):
         pass
+
+
+def test_event_log_is_skipped_off_windows():
+    from printguard.alerts import write_event_log
+
+    if sys.platform != "win32":
+        assert write_event_log("anything") is False
+
+
+def test_event_log_script_quotes_the_message(monkeypatch):
+    from printguard import alerts
+
+    monkeypatch.setattr(alerts.sys, "platform", "win32")
+    seen = []
+    assert alerts.write_event_log("it's broken", powershell=seen.append) is True
+    assert "-Source printguard" in seen[0]
+    assert "'it''s broken'" in seen[0]
+
+
+def test_event_log_failure_does_not_raise(monkeypatch):
+    from printguard import alerts
+    from printguard.printers import PrinterError
+
+    def denied(script):
+        raise PrinterError("access denied")
+
+    monkeypatch.setattr(alerts.sys, "platform", "win32")
+    assert alerts.write_event_log("x", powershell=denied) is False
