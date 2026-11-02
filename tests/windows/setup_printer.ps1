@@ -1,7 +1,11 @@
 $ErrorActionPreference = "Stop"
+trap {
+    Write-Host "::error::$($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)"
+    exit 1
+}
 $name = "printguard-ci"
 $port = Join-Path $env:RUNNER_TEMP "printguard-ci.prn"
-Write-Host "drivers: $((Get-PrinterDriver | Select-Object -ExpandProperty Name) -join '; ')"
+Write-Host "::notice::drivers: $((Get-PrinterDriver | Select-Object -ExpandProperty Name) -join '; ')"
 Add-PrinterPort -Name $port
 Add-Printer -Name $name -DriverName "Generic / Text Only" -PortName $port
 Get-CimInstance Win32_Printer -Filter "Name='$name'" | Invoke-CimMethod -MethodName Pause | Out-Null
