@@ -2,6 +2,8 @@
 
 Acceptance checklist for running printguard against a physical printer. **Status: not executed.** Nothing in this file is a result. Every box is empty until a person has done the step on the real machine and written down what they saw.
 
+Don't fill in this file. Copy it to `docs/homologation/v<version>.md` and fill in the copy, so the template stays blank. [releasing.md](releasing.md) explains how the record gates a stable release, and `python scripts/check_homologation.py <record>` lists what is still missing.
+
 Follow [installation-windows.md](installation-windows.md) for the setup. Use a fresh working directory for each scenario, so one scenario's state can't affect the next.
 
 ## Record

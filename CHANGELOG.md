@@ -1,8 +1,15 @@
 # Changelog
 
-## 0.3.0 (unreleased, in homologation)
+## 0.3.0rc1 (release candidate, not homologated)
 
-Preparation for a first run on real hardware. Nothing here has been run against a physical printer.
+Preparation for a first run on real hardware. No record of a physical-printer homologation has been committed, so this is a pre-release. A stable 0.3.0 needs the evidence described in [docs/releasing.md](docs/releasing.md).
+
+- Fix: alert de-duplication compares against the whole day's file. With two unresolved days the messages used to alternate and pile up on every run.
+- Fix: the package metadata uses an SPDX license expression. The old form stops building with current setuptools in February 2027.
+- Security: on POSIX, `state/`, `out/` and `logs/` are created readable only by their owner. On Windows the folder's ACL applies.
+- New: `scripts/check_homologation.py` reads a filled-in checklist and refuses approval while any check lacks a result or evidence, any check failed, or the sign-off is missing.
+- New: [docs/releasing.md](docs/releasing.md), the criteria for a stable release.
+- CI: actions updated to checkout 7 and setup-python 7. Dependabot no longer raises dependency floors.
 
 - New: `printguard --version`.
 - New: `printguard resolve --day YYYY-MM-DD` settles an earlier day.

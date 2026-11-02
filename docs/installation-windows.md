@@ -14,7 +14,7 @@ You need:
 - A PDF application that handles the shell `PrintTo` verb for the account that will run the task. Adobe Acrobat Reader and SumatraPDF are the usual candidates, and neither has been tested with printguard. Step 5 checks this.
 - A folder that is **not** synced or shared. Examples below use `C:\printguard`.
 
-Keep the checklist open: [homologation-checklist.md](homologation-checklist.md). Every step below says where it is recorded.
+Keep a copy of the checklist open ([homologation-checklist.md](homologation-checklist.md), copied to `docs/homologation/v<version>.md`). Fill it in as you go, with evidence.
 
 ## 1. Install
 

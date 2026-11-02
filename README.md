@@ -12,7 +12,7 @@ printguard treats "sent" and "printed" as two different states. It builds the PD
 
 ## Status
 
-Ready for homologation, not yet proven on real hardware. The code is tested with a simulated printer on Linux and Windows, and the Windows backend has been run against a real but paused print queue on a hosted CI runner. Nobody has yet printed a report with it on a physical printer. [docs/installation-windows.md](docs/installation-windows.md) is the install procedure and [docs/homologation-checklist.md](docs/homologation-checklist.md) is the acceptance checklist that has to be filled in before it is trusted with a real report.
+Release candidate. Nothing in this repository records a completed homologation on a physical printer, so no version is marked as homologated. The code is tested with a simulated printer on Linux and Windows, and the Windows backend has been run against a real but paused print queue on a hosted CI runner. [docs/installation-windows.md](docs/installation-windows.md) is the install procedure, [docs/homologation-checklist.md](docs/homologation-checklist.md) is the acceptance checklist, and [docs/releasing.md](docs/releasing.md) says what a filled-in record has to show before a stable release is published.
 
 ## Demo
 
