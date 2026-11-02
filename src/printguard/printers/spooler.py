@@ -9,6 +9,7 @@ from pathlib import Path
 from printguard.printers.base import (
     JobStatus,
     PrinterError,
+    QueueEntry,
     QueueUnreadable,
     SubmitRejected,
 )
@@ -112,17 +113,26 @@ class WindowsSpoolerPrinter:
             self.sleep(self.appear_interval)
         raise PrinterError("no new job appeared in the print queue")
 
+    def queue(self) -> dict[str, QueueEntry]:
+        return {
+            job_id: QueueEntry(classify(status), document)
+            for job_id, (status, document) in self._entries().items()
+        }
+
     def _jobs(self) -> dict[str, str]:
+        return {job_id: status for job_id, (status, _) in self._entries().items()}
+
+    def _entries(self) -> dict[str, tuple[str, str]]:
         script = (
             f"Get-PrintJob -PrinterName {quote(self.printer_name)} | "
-            'ForEach-Object { [pscustomobject]@{ID=$_.ID; Status="$($_.JobStatus)"} } | '
-            "ConvertTo-Json -Compress"
+            'ForEach-Object { [pscustomobject]@{ID=$_.ID; Status="$($_.JobStatus)"; '
+            'Document="$($_.DocumentName)"} } | ConvertTo-Json -Compress'
         )
         try:
             raw = self.powershell(script).strip()
         except PrinterError as exc:
             raise QueueUnreadable(str(exc)) from exc
-        return parse_jobs(raw)
+        return parse_queue(raw)
 
 
 def parse_jobs(raw: str) -> dict[str, str]:
