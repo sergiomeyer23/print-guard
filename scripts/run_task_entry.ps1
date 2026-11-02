@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory)][string]$PrinterName,
     [string]$Workdir = (Split-Path -Parent $PSScriptRoot),
     [string]$Python = "python",
-    [string]$Deadline = "09:05"
+    [string]$Deadline = "09:05",
+    [int]$ConfirmTimeout = 120
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +17,10 @@ function Write-Log([string]$message) {
 }
 
 function Invoke-Printguard([string[]]$arguments) {
-    & $Python -m printguard @arguments --workdir $Workdir --printer spooler --printer-name $PrinterName --event-log 2>&1 |
+    # Windows PowerShell 5.1 turns native stderr lines into terminating errors under
+    # "Stop", and printguard logs to stderr.
+    $ErrorActionPreference = "Continue"
+    & $Python -m printguard @arguments --workdir $Workdir --printer spooler --printer-name $PrinterName --confirm-timeout $ConfirmTimeout --event-log 2>&1 |
         Add-Content -Path $log
     return $LASTEXITCODE
 }

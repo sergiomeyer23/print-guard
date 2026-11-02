@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Python = (Get-Command $Python).Source
 $entry = Join-Path $PSScriptRoot "run_task_entry.ps1"
 $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$entry`" -PrinterName `"$PrinterName`" -Workdir `"$Workdir`" -Python `"$Python`""
 
