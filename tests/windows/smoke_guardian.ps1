@@ -23,3 +23,5 @@ if (-not $ran) { Write-Host "::error::guardian did not run to the end"; exit 1 }
 $runCode = [int]$Matches[1]
 if ($runCode -ne 0 -and -not $alert) { Write-Host "::error::run failed without leaving an alert"; exit 1 }
 Write-Host "guardian completed, run exit code $runCode"
+
+exit 0

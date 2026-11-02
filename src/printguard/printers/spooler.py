@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import base64
+import html
 import json
+import re
 import subprocess
 import time
 from collections.abc import Callable
@@ -26,7 +28,10 @@ class CommandTimeout(PrinterError):
     pass
 
 
-UTF8_OUTPUT = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+UTF8_OUTPUT = (
+    "$ProgressPreference = 'SilentlyContinue'; "
+    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+)
 
 
 def encode_command(script: str) -> str:
@@ -40,6 +45,8 @@ def run_powershell(script: str) -> str:
                 "powershell",
                 "-NoProfile",
                 "-NonInteractive",
+                "-OutputFormat",
+                "Text",
                 "-EncodedCommand",
                 encode_command(script),
             ],
@@ -53,8 +60,19 @@ def run_powershell(script: str) -> str:
     except OSError as exc:
         raise PrinterError(f"powershell unavailable: {exc}") from exc
     if proc.returncode != 0:
-        raise PrinterError(proc.stderr.strip() or f"powershell exited {proc.returncode}")
+        raise PrinterError(clean_error(proc.stderr) or f"powershell exited {proc.returncode}")
     return proc.stdout
+
+
+def clean_error(stderr: str) -> str:
+    if not stderr.lstrip().startswith("#< CLIXML"):
+        return stderr.strip()
+    lines = re.findall(r'<S S="Error">(.*?)</S>', stderr, flags=re.S)
+    text = (
+        "".join(lines).replace("_x000D__x000A_", " ").replace("_x000D_", "").replace("_x000A_", " ")
+    )
+    text = html.unescape(text)
+    return " ".join(text.split())
 
 
 def quote(value: str) -> str:

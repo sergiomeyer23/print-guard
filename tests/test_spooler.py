@@ -180,3 +180,26 @@ def test_script_is_passed_encoded_so_quoting_cannot_break_it(monkeypatch):
     assert "-Command" not in argv
     decoded = base64.b64decode(argv[argv.index("-EncodedCommand") + 1]).decode("utf-16-le")
     assert decoded.endswith(script)
+
+
+def test_clixml_error_from_windows_powershell_is_flattened():
+    from printguard.printers.spooler import clean_error
+
+    raw = (
+        '#< CLIXML\n<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">'
+        '<Obj S="progress" RefId="0"><MS><AV>Preparing modules for first use.</AV></MS></Obj>'
+        '<S S="Error">Start-Process : This command cannot be run due to the error: No application '
+        "is associated with the specified file for _x000D__x000A_</S>"
+        '<S S="Error">this operation._x000D__x000A_</S>'
+        '<S S="Error">At line:1 char:59_x000D__x000A_</S></Objs>'
+    )
+    message = clean_error(raw)
+    assert message.startswith("Start-Process : This command cannot be run")
+    assert "associated with the specified file for this operation." in message
+    assert "CLIXML" not in message and "_x000D_" not in message
+
+
+def test_plain_stderr_is_only_trimmed():
+    from printguard.printers.spooler import clean_error
+
+    assert clean_error("  boom \n") == "boom"
