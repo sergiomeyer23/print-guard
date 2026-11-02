@@ -1,0 +1,13 @@
+state/
+out/
+data/
+logs/
+*.pdf
+.env
+__pycache__/
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
