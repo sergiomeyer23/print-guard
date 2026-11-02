@@ -1,5 +1,7 @@
 # printguard
 
+[![ci](https://github.com/sergiomeyer23/print-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/sergiomeyer23/print-guard/actions/workflows/ci.yml)
+
 Scheduled reports that print, confirm the job left the queue, and alert you when they don't.
 
 ## The problem
