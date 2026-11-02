@@ -29,7 +29,7 @@ Changelog = "https://github.com/sergiomeyer23/print-guard/blob/main/CHANGELOG.md
 Documentation = "https://github.com/sergiomeyer23/print-guard/tree/main/docs"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.5"]
+dev = ["pytest>=9.2.0", "ruff>=0.5"]
 
 [project.scripts]
 printguard = "printguard.cli:main"
