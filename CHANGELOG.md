@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 (unreleased, in homologation)
+
+Preparation for a first run on real hardware. Nothing here has been run against a physical printer.
+
+- New: `printguard --version`.
+- New: `printguard resolve --day YYYY-MM-DD` settles an earlier day.
+- New: `run` and `check` write an alert for any earlier day still unresolved, every day, until it is settled.
+- New: exit code 5 for an unexpected error. It is logged, written as an alert, and the lock is released.
+- Changed: Event Log alerts use `Write-EventLog` with a `printguard` source that `install_task.ps1` registers. `eventcreate` needed administrator rights, and the task runs as a normal user. Verified on a hosted runner as administrator.
+- Fix: the journal connection is closed when the schema can't be applied, which left a corrupt `journal.db` locked on Windows.
+- CI: read-only token permissions, current action versions, concurrency control, Dependabot.
+- Docs: [installation procedure](docs/installation-windows.md), [homologation checklist](docs/homologation-checklist.md), a security note, release notes for 0.2.1.
+
 ## 0.2.1
 
 Windows validation on a hosted runner. See [docs/windows-validation.md](docs/windows-validation.md).
