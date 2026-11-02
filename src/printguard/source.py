@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import sqlite3
+from contextlib import closing
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -37,7 +38,7 @@ def seed(db_path: Path, today: date, rows: int = 60, force: bool = False) -> int
         raise FileExistsError(f"{db_path} already exists, pass --force to rebuild it")
     db_path.unlink(missing_ok=True)
     rng = random.Random(42)
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn, conn:
         conn.execute(SCHEMA)
         conn.executemany(
             "INSERT INTO shipments (sku, description, qty, location, due_date, status) "
@@ -56,7 +57,7 @@ def _fake_row(rng: random.Random, today: date) -> tuple:
 
 
 def fetch_pending(db_path: Path, today: date) -> list[tuple]:
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         cursor = conn.execute(
             f"SELECT {', '.join(COLUMNS)} FROM shipments "
             "WHERE status = 'pending' AND due_date <= ? ORDER BY due_date, location",

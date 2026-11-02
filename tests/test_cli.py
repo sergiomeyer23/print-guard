@@ -47,3 +47,12 @@ def test_report_contains_query_timestamp(tmp_path):
     pdf = render_pdf(rows, tmp_path / "r.pdf", datetime(2026, 3, 10, 8, 1, 2))
     assert pdf_problem(pdf) is None
     assert pdf_problem(Path(tmp_path / "missing.pdf")) == "file does not exist"
+
+
+def test_database_file_is_released_after_use(tmp_path):
+    db = tmp_path / "d.db"
+    seed(db, date(2026, 3, 10))
+    fetch_pending(db, date(2026, 3, 10))
+    db.unlink()
+    seed(db, date(2026, 3, 10))
+    seed(db, date(2026, 3, 10), force=True)
