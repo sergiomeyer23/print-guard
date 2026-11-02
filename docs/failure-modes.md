@@ -21,7 +21,7 @@ What printguard does for each failure, and what it can't do. "Test" names the fi
 | Machine asleep at 08:00 | Power settings | `WakeToRun` plus the boot trigger. Not testable in CI. | none |
 | Job accepted then dropped by the printer | Firmware, network printers | Looks identical to success. printguard can't see past the spooler. | none |
 | Job finished, then the run died | Fast printer, killed process | Printed and lost look the same once the job leaves the queue, so the day is `unknown` and gets a `resolve`. This costs an operator decision on a report that printed. | `test_reliability` |
-| Wrong default PDF handler | No handler supports `PrintTo` | Starting the print fails, which is a proven rejection: `falha`, alert. | `test_spooler` |
+| Wrong default PDF handler | No handler supports `PrintTo` | Starting the print fails, which is a proven rejection: `falha`, alert. Seen on a real Windows runner. | `test_spooler`, `windows-integration` |
 | Document renamed by the handler | Some PDF viewers | Recovery can't match the job by name and falls back to `unknown`. | none |
 | Two machines on one shared folder | Network share as workdir | Not protected. The lock is per machine. | none |
 | Event Log write denied | No admin rights to create the source | The alert file is still written. | none |

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1
+
+Windows validation on a hosted runner. See [docs/windows-validation.md](docs/windows-validation.md).
+
+- New CI job `windows-integration`: parses and lints the PowerShell scripts, registers the scheduled task and reads it back, runs the spooler backend against a real paused print queue, and runs the guardian end to end.
+- Fix: the guardian no longer aborts on the first stderr line under Windows PowerShell 5.1.
+- Fix: PowerShell errors are no longer returned as CLIXML. Scripts are passed encoded, with plain text output.
+- Fix: an empty queue printed as `null` by `ConvertTo-Json` is read as empty instead of unreadable.
+- The installer resolves the full path of Python. The guardian takes `-ConfirmTimeout`.
+
 ## 0.2.0
 
 Safer recovery when a run is interrupted. printguard still cannot prove that paper came out, so this release is about not making things worse when it can't tell.

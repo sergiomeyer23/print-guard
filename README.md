@@ -87,8 +87,7 @@ The full table, including the ones I can't cover, is in [docs/failure-modes.md](
 - A job leaving the Windows queue means the spooler finished with it. It does not prove paper came out. A printer that drops a job after accepting it will look like success.
 - Recovery trades convenience for safety. A crash before the send, or after a send that printed and left the queue before the next run, both end as `unknown`, and a person decides with `resolve`. In practice that means you will sometimes be asked about a report that printed fine.
 - Job matching after a crash relies on the spool job's document name containing the PDF file name. Print handlers that rename documents will fall back to `unknown`.
-- `WindowsSpoolerPrinter` prints through the shell `PrintTo` verb, so the machine needs a PDF handler that supports it. It has only been exercised in tests against a fake PowerShell, not on real hardware.
-- The PowerShell scripts have not been run on a Windows machine. Read them before trusting them.
+- `WindowsSpoolerPrinter` prints through the shell `PrintTo` verb, so the machine needs a PDF handler that supports it. It has been exercised against a real Windows print queue in CI, but never against a physical printer, and the PDF handler on that runner doesn't support `PrintTo`. See [docs/windows-validation.md](docs/windows-validation.md) for exactly what was and wasn't checked.
 - The lock covers one working directory on one machine. Two machines sharing a network folder are not protected from each other.
 - One report, one printer, one calendar day per state. This is a small tool, not a scheduler or a framework.
 
@@ -100,4 +99,4 @@ ruff check .
 pytest
 ```
 
-CI runs both on Ubuntu and Windows with the simulated printer. MIT licensed.
+CI runs both on Ubuntu and Windows with the simulated printer. A separate Windows job parses and lints the PowerShell scripts, registers the scheduled task and reads it back, and runs the spooler backend against a real, paused Windows print queue. MIT licensed.
